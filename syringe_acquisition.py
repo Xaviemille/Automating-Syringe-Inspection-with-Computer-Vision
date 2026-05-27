@@ -5,12 +5,9 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-
 import numpy as np
 
-
 # Configuration 
-
 
 # Stepper geometry: one full 360-deg revolution = STEPS_PER_REV image positions.
 # At 7.5 deg per acquisition position, that's 48 positions per syringe.
@@ -84,3 +81,23 @@ class Stepper:
             self._dio.clear()
         except Exception as e:
             print(f"Warning: failed to clear digital lines on close: {e}")
+
+# Camera control
+
+class Camera:
+    """Wraps a Basler camera in software-trigger mode for deterministic single-frame capture."""
+
+    def __init__(self):
+        from pypylon import pylon
+        self._pylon = pylon
+
+        tl_factory = pylon.TlFactory.GetInstance()
+        devices = tl_factory.EnumerateDevices()
+        if not devices:
+            raise RuntimeError("No Basler camera detected. Check USB connection and power.")
+
+        self._cam = pylon.InstantCamera(tl_factory.CreateFirstDevice())
+        self._cam.Open()
+
+        print(f"Camera opened: {self._cam.GetDeviceInfo().GetModelName()} "
+              f"(SN {self._cam.GetDeviceInfo().GetSerialNumber()})")
