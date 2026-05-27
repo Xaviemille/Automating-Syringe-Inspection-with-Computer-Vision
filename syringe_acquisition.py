@@ -101,3 +101,15 @@ class Camera:
 
         print(f"Camera opened: {self._cam.GetDeviceInfo().GetModelName()} "
               f"(SN {self._cam.GetDeviceInfo().GetSerialNumber()})")
+        
+        # Lock settings
+
+        # Pixel format first (changes available range of other parameters).
+        self._cam.PixelFormat.SetValue(CAMERA_PIXEL_FORMAT)
+
+        # Disable any auto-adjustment that might be on by default.
+        for node_name in ("ExposureAuto", "GainAuto", "BalanceWhiteAuto"):
+            try:
+                getattr(self._cam, node_name).SetValue("Off")
+            except Exception:
+                pass  
