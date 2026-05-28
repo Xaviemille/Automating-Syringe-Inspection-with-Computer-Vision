@@ -113,3 +113,26 @@ class Camera:
                 getattr(self._cam, node_name).SetValue("Off")
             except Exception:
                 pass  
+        
+        # Exposure. acA800 uses ExposureTime in microseconds (float).
+        try:
+            self._cam.ExposureTime.SetValue(float(CAMERA_EXPOSURE_US))
+        except Exception:
+            # Older firmware exposes ExposureTimeAbs instead.
+            self._cam.ExposureTimeAbs.SetValue(float(CAMERA_EXPOSURE_US))
+
+        # Gain. acA800 uses Gain in dB (float).
+        try:
+            self._cam.Gain.SetValue(float(CAMERA_GAIN_DB))
+        except Exception:
+            self._cam.GainRaw.SetValue(int(CAMERA_GAIN_DB))
+
+        # Software trigger configuration 
+
+        # Replaces all currently registered configuration handlers and sets up
+        # the camera so that frames are only captured when we explicitly trigger.
+        self._cam.RegisterConfiguration(
+            pylon.SoftwareTriggerConfiguration(),
+            pylon.RegistrationMode_ReplaceAll,
+            pylon.Cleanup_Delete,
+        )
