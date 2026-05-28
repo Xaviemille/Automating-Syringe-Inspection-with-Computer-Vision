@@ -136,3 +136,11 @@ class Camera:
             pylon.RegistrationMode_ReplaceAll,
             pylon.Cleanup_Delete,
         )
+
+        # Image converter: Bayer raw = BGR8 for saving with OpenCV 
+        self._converter = pylon.ImageFormatConverter()
+        self._converter.OutputPixelFormat = pylon.PixelType_BGR8packed
+        self._converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
+
+        # Start the grab loop. We feed it triggers manually via trigger_and_grab().
+        self._cam.StartGrabbing(pylon.GrabStrategy_OneByOne)
