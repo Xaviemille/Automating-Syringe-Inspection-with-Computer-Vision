@@ -144,3 +144,21 @@ class Camera:
 
         # Start the grab loop. We feed it triggers manually via trigger_and_grab().
         self._cam.StartGrabbing(pylon.GrabStrategy_OneByOne)
+    
+    def trigger_and_grab(self):
+        """Trigger one frame, wait for it, return as a numpy BGR image."""
+        pylon = self._pylon
+        if not self._cam.WaitForFrameTriggerReady(TRIGGER_READY_TIMEOUT_MS,
+                                                  pylon.TimeoutHandling_ThrowException):
+            raise RuntimeError("Camera did not become ready for trigger in time.")
+        self._cam.ExecuteSoftwareTrigger()
+
+        result = self._cam.RetrieveResult(GRAB_TIMEOUT_MS, pylon.TimeoutHandling_ThrowException)
+        try:
+            if not result.GrabSucceeded():
+                raise RuntimeError(f"Grab failed: {result.ErrorCode} {result.ErrorDescription}")
+            converted = self._converter.Convert(result)
+            img = converted.GetArray()  # H x W x 3, BGR, uint8
+        finally:
+            result.Release()
+        return img
