@@ -162,3 +162,32 @@ class Camera:
         finally:
             result.Release()
         return img
+    
+    def get_settings(self):
+        """Return a dict of the locked settings, for the sidecar metadata."""
+        def safe(getter):
+            try:
+                return getter()
+            except Exception:
+                return None
+
+        info = self._cam.GetDeviceInfo()
+        return {
+            "model": info.GetModelName(),
+            "serial": info.GetSerialNumber(),
+            "pixel_format": safe(lambda: self._cam.PixelFormat.GetValue()),
+            "exposure_us": safe(lambda: self._cam.ExposureTime.GetValue()),
+            "gain_db": safe(lambda: self._cam.Gain.GetValue()),
+            "width": safe(lambda: self._cam.Width.GetValue()),
+            "height": safe(lambda: self._cam.Height.GetValue()),
+        }
+
+    def close(self):
+        try:
+            self._cam.StopGrabbing()
+        except Exception:
+            pass
+        try:
+            self._cam.Close()
+        except Exception:
+            pass
