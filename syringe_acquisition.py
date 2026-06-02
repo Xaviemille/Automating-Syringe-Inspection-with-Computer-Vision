@@ -191,3 +191,83 @@ class Camera:
             self._cam.Close()
         except Exception:
             pass
+
+# Acquisition routine
+
+def run_acquisition(syringe_id, label, notes, direction="forward"):
+    """Capture one full revolution for one syringe. Returns the output directory."""
+    import cv2
+
+    if not syringe_id or not syringe_id.replace("_", "").replace("-", "").isalnum():
+        raise ValueError("syringe_id must be non-empty alphanumeric (underscores/dashes allowed)")
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = OUTPUT_ROOT / f"{syringe_id}_{timestamp}"
+    out_dir.mkdir(parents=True, exist_ok=False)
+    print(f"Output directory: {out_dir}")
+
+    stepper = None
+    camera = None
+    captured_files = []
+    try:
+        stepper = Stepper()
+        camera = Camera()
+
+        # Warm-up grab: the first frame after StartGrabbing can have stale
+        # exposure settings. Trigger once and discard.
+        try:
+            _ = camera.trigger_and_grab()
+            print("Warm-up frame captured and discarded.")
+        except Exception as e:
+            print(f"Warm-up grab failed (continuing anyway): {e}")
+
+        print(f"Starting {STEPS_PER_REV}-frame capture for syringe '{syringe_id}'...")
+        t_start = time.time()
+
+        for i in range(STEPS_PER_REV):
+            angle_deg = i * DEG_PER_STEP
+
+            # The first frame (i=0) is captured at the starting position before
+            # any movement, so we move AFTER capture, not before.
+            time.sleep(SETTLE_DELAY_S)
+            img = camera.trigger_and_grab()
+
+            fname = f"{syringe_id}_{label}_a{angle_deg:05.1f}_{i:03d}.png"
+            fpath = out_dir / fname
+            # PNG with no compression for sub-pixel defect fidelity.
+            cv2.imwrite(str(fpath), img, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+            captured_files.append(fname)
+            print(f"  [{i+1:2d}/{STEPS_PER_REV}] angle={angle_deg:5.1f} deg -> {fname}")
+
+            # Move to the next angular position (unless this was the last frame).
+            if i < STEPS_PER_REV - 1:
+                stepper.step_once(direction=direction)
+
+        elapsed = time.time() - t_start
+        print(f"Capture complete in {elapsed:.1f} s ({elapsed / STEPS_PER_REV:.2f} s/frame).")
+
+        # Sidecar metadata: everything needed to reproduce or audit this run.
+        metadata = {
+            "syringe_id": syringe_id,
+            "label": label,
+            "notes": notes or "",
+            "timestamp": timestamp,
+            "direction": direction,
+            "deg_per_step": DEG_PER_STEP,
+            "steps_per_revolution": STEPS_PER_REV,
+            "substep_delay_s": SUBSTEP_DELAY_S,
+            "settle_delay_s": SETTLE_DELAY_S,
+            "camera": camera.get_settings(),
+            "files": captured_files,
+        }
+        with open(out_dir / "metadata.json", "w") as f:
+            json.dump(metadata, f, indent=2)
+        print(f"Wrote {out_dir / 'metadata.json'}")
+
+        return out_dir
+
+    finally:
+        if camera is not None:
+            camera.close()
+        if stepper is not None:
+            stepper.close()
