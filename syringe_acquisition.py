@@ -271,3 +271,45 @@ def run_acquisition(syringe_id, label, notes, direction="forward"):
             camera.close()
         if stepper is not None:
             stepper.close()
+            
+# Optional GUI mode (for rig calibration and one-off tests).
+
+
+def run_gui():
+    """Minimal GUI: enter ID + label, click Capture, watch the progress in the terminal."""
+    import tkinter as tk
+    from tkinter import messagebox, ttk
+
+    root = tk.Tk()
+    root.title("Syringe acquisition")
+    root.geometry("360x240")
+
+    frm = ttk.Frame(root, padding=12)
+    frm.pack(fill="both", expand=True)
+
+    ttk.Label(frm, text="Syringe ID:").grid(row=0, column=0, sticky="w")
+    id_var = tk.StringVar(value="SYR_001")
+    ttk.Entry(frm, textvariable=id_var, width=24).grid(row=0, column=1, pady=4)
+
+    ttk.Label(frm, text="Label:").grid(row=1, column=0, sticky="w")
+    label_var = tk.StringVar(value="good")
+    ttk.Combobox(
+        frm, textvariable=label_var, width=22,
+        values=["good", "defect_flash", "defect_print", "defect_surface", "defect_warp"],
+    ).grid(row=1, column=1, pady=4)
+
+    ttk.Label(frm, text="Notes:").grid(row=2, column=0, sticky="w")
+    notes_var = tk.StringVar(value="")
+    ttk.Entry(frm, textvariable=notes_var, width=24).grid(row=2, column=1, pady=4)
+
+    ttk.Label(frm, text="Direction:").grid(row=3, column=0, sticky="w")
+    direction_var = tk.StringVar(value="forward")
+    ttk.Combobox(
+        frm, textvariable=direction_var, width=22,
+        values=["forward", "reverse"], state="readonly",
+    ).grid(row=3, column=1, pady=4)
+
+    status_var = tk.StringVar(value="Ready.")
+    ttk.Label(frm, textvariable=status_var, foreground="gray").grid(
+        row=5, column=0, columnspan=2, pady=8
+    )
