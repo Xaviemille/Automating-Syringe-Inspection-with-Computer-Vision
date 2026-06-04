@@ -271,7 +271,7 @@ def run_acquisition(syringe_id, label, notes, direction="forward"):
             camera.close()
         if stepper is not None:
             stepper.close()
-            
+
 # Optional GUI mode (for rig calibration and one-off tests).
 
 
@@ -313,3 +313,22 @@ def run_gui():
     ttk.Label(frm, textvariable=status_var, foreground="gray").grid(
         row=5, column=0, columnspan=2, pady=8
     )
+
+
+    def on_capture():
+        status_var.set("Capturing... see terminal for progress.")
+        root.update_idletasks()
+        try:
+            out_dir = run_acquisition(
+                syringe_id=id_var.get().strip(),
+                label=label_var.get().strip(),
+                notes=notes_var.get().strip(),
+                direction=direction_var.get(),
+            )
+            status_var.set(f"Done. Saved to {out_dir}")
+            messagebox.showinfo("Capture complete", f"Saved {STEPS_PER_REV} images to:\n{out_dir}")
+        except Exception as e:
+            status_var.set(f"Error: {e}")
+            messagebox.showerror("Capture failed", str(e))
+
+    
