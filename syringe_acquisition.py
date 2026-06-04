@@ -314,7 +314,7 @@ def run_gui():
         row=5, column=0, columnspan=2, pady=8
     )
 
-
+    
     def on_capture():
         status_var.set("Capturing... see terminal for progress.")
         root.update_idletasks()
@@ -331,4 +331,8 @@ def run_gui():
             status_var.set(f"Error: {e}")
             messagebox.showerror("Capture failed", str(e))
 
-    
+    ttk.Button(frm, text=f"Capture {STEPS_PER_REV} frames", command=on_capture).grid(
+        row=4, column=0, columnspan=2, pady=10
+    )
+
+    root.mainloop()
