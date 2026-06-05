@@ -336,3 +336,33 @@ def run_gui():
     )
 
     root.mainloop()
+
+# Entry point
+
+def main():
+    parser = argparse.ArgumentParser(description="Automated syringe image acquisition.")
+    parser.add_argument("--id", dest="syringe_id", help="Syringe identifier, e.g. SYR_001")
+    parser.add_argument("--label", default="good",
+                        help="Class label, e.g. good, defect_flash, defect_print")
+    parser.add_argument("--notes", default="", help="Optional free-text notes for the sidecar")
+    parser.add_argument("--direction", choices=["forward", "reverse"], default="forward",
+                        help="Rotation direction")
+    parser.add_argument("--gui", action="store_true", help="Launch the GUI instead of CLI mode")
+    args = parser.parse_args()
+
+    _import_hardware()
+
+    if args.gui:
+        run_gui()
+        return
+
+    if not args.syringe_id:
+        parser.error("--id is required in CLI mode (or use --gui)")
+
+    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    run_acquisition(
+        syringe_id=args.syringe_id,
+        label=args.label,
+        notes=args.notes,
+        direction=args.direction,
+    )
